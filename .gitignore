@@ -1,0 +1,109 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Virtual environment
+.env
+.venv*/
+env*/
+venv*/
+
+# FastAPI / Uvicorn
+*.log
+uvicorn.log
+*.pid
+
+# Database
+*.db
+*.sqlite3
+*.sql
+instance/
+*.db-journal
+
+# Migrations (Alembic)
+alembic/
+alembic.ini
+migrations/
+
+# IDE / Editors
+.idea/
+.vscode/
+*.sublime-*
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+.tox/
+.coverage
+
+# Build / Distribution
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# dotenv
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ruff / linting
+.ruff_cache/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# Local dev
+local/
+tmp/
+temp/
