@@ -4,4 +4,4 @@ langchain-community
 langchain-google-genai
 python-dotenv
 requests
-python-certifi-win32
+python-certifi-win32 # this is required for ssl certificate verification on Windows
