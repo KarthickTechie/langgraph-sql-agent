@@ -6,7 +6,7 @@ langchain-google-genai
 python-dotenv
 requests
 python-certifi-win32 # this is required for ssl certificate verification on Windows
-fastapi==0.104.1
-uvicorn==0.24.0
-pydantic==2.12.4
-psycopg2-binary==2.9.11
+fastapi
+uvicorn[standard]
+pydantic
+psycopg2-binary
