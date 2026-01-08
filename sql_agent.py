@@ -21,15 +21,15 @@ from typing_extensions import TypedDict
 load_dotenv()  # Loads .env file into os.environ
 
 # Optional: Verify the key is loaded (remove in production)
-if not os.getenv("GEMINI_API_KEY"):
-    raise ValueError("GEMINI_API_KEY not found. Please add it to your .env file.")
+# if not os.getenv("GEMINI_API_KEY"):
+#     raise ValueError("GEMINI_API_KEY not found. Please add it to your .env file.")
 
 # --- 2. Set up Google Gemini LLM ---
 # Uses GOOGLE_API_KEY from environment (loaded via dotenv)
 #model = init_chat_model("gemini-2.5-flash", model_provider="google_genai", temperature=0)
 # model = ChatOllama(model="llama3", max_retries=3)
 model = ChatOllama(
-    model="llama3:latest",   # Recommended: fast + good tool calling
+    model="llama3.2:latest",   # Recommended: fast + good tool calling
     temperature=0,             # For deterministic SQL generation
 )
 # --- 3. Set up the database ---
