@@ -10,6 +10,7 @@ from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
+from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.memory import InMemorySaver
@@ -25,8 +26,12 @@ if not os.getenv("GEMINI_API_KEY"):
 
 # --- 2. Set up Google Gemini LLM ---
 # Uses GOOGLE_API_KEY from environment (loaded via dotenv)
-model = init_chat_model("gemini-1.5-flash", model_provider="google_genai", temperature=0)
-
+#model = init_chat_model("gemini-2.5-flash", model_provider="google_genai", temperature=0)
+# model = ChatOllama(model="llama3", max_retries=3)
+model = ChatOllama(
+    model="llama3:latest",   # Recommended: fast + good tool calling
+    temperature=0,             # For deterministic SQL generation
+)
 # --- 3. Set up the database ---
 db = SQLDatabase.from_uri("sqlite:///Chinook.db")
 print("Database dialect:", db.dialect)

@@ -1,6 +1,7 @@
 langchain
 langgraph
 langchain-community
+langchain_ollama
 langchain-google-genai
 python-dotenv
 requests
