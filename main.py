@@ -20,22 +20,23 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 import uvicorn
+from waitress import serve
 
 # --- 1. Load environment variables ---
 load_dotenv()  # Loads .env file into os.environ
 
 # Optional: Verify the key is loaded (remove in production)
-# if not os.getenv("GEMINI_API_KEY"):
-#     raise ValueError("GEMINI_API_KEY not found. Please add it to your .env file.")
+if not os.getenv("GEMINI_API_KEY"):
+    raise ValueError("GEMINI_API_KEY not found. Please add it to your .env file.")
 
 # --- 2. Set up Google Gemini LLM ---
 # Uses GOOGLE_API_KEY from environment (loaded via dotenv)
-#model = init_chat_model("gemini-2.5-flash", model_provider="google_genai", temperature=0)
+model = init_chat_model("gemini-2.5-flash", model_provider="google_genai", temperature=0)
 # model = ChatOllama(model="llama3", max_retries=3)
-model = ChatOllama(
-    model="llama3.2:latest",   # Recommended: fast + good tool calling
-    temperature=0,             # For deterministic SQL generation
-)
+# model = ChatOllama(
+#     model="llama3.2:latest",   # Recommended: fast + good tool calling
+#     temperature=3,             # For deterministic SQL generation
+# )
 # --- 3. Set up the database ---
 db = SQLDatabase.from_uri("sqlite:///Chinook.db")
 print("Database dialect:", db.dialect)
@@ -101,8 +102,8 @@ graph = graph_builder.compile(checkpointer=memory)
 #---- 11 . Fast API Integration ----#
 
 app = FastAPI(
-    title="Chinook SQL Agent API",
-    description="Ask natural language questions about the Chinook music database",
+    title="VT360 SQL Agent API",
+    description="Ask natural language questions about the VT360  database",
     version="1.0.0"
 )
 
@@ -133,7 +134,8 @@ async def query_agent(request: QueryRequest):
             if messages:
                 last_msg = messages[-1]
                 if isinstance(last_msg, AIMessage) and not last_msg.tool_calls:
-                    final_answer = last_msg.content
+                    final_answer = last_msg.content[0]['text']
+                    print(f"Final Answer: {final_answer}")
 
         if final_answer is None:
             final_answer = "Sorry, I couldn't generate a response."
@@ -148,9 +150,11 @@ async def root():
     return {"message": "Chinook SQL Agent API is running. POST to /query with {'question': 'your question'}"}
 
 # --- Run with: uvicorn main:app --reload ---
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-    
+
+
 # # --- 11. Run the agent ---
 # def run_query(question: str, thread_id: str = "default"):
 #     print(f"Question: {question}\n")
