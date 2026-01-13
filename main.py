@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage,ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END
@@ -71,9 +71,16 @@ Current company practice for identifying potentially doubtful invoices (as of Ja
 → An invoice is considered **potentially doubtful** if BOTH conditions are met:
   1. spm_invoice_status indicates the invoice was issued ('invoiced', 'issued', 'sent', etc.)
   2. Invoice is older than 365 days
-     → CURRENT_DATE - spm_invoice_date >= 365 days
+     → CURRENT_DATE - spm_invoice_date >= 365 days AND spm_collected_value == 0 
+
 
 Most important table for this analysis:
+• spms_po_master
+  Key columns for AFDA / receivables and AR analysis:
+  - spm_cost_code
+  - spm_client_name
+  - spm_po_number
+
 • spms_po_milestones
   Key columns for AFDA / receivables and AR analysis:
   - spm_invoice_status
@@ -126,8 +133,8 @@ Rules for every answer:
    - Invoice Date
    - Invoice Value (₹)
    - Cost Code
-   - Milestone Name
    - Client Name
+
 7. When showing Accounts Receivables / AR / outstanding items,Always add a very short summary line at the bottom:
    • Total outstanding amount
    • Number of pending invoices
@@ -141,8 +148,14 @@ Rules for every answer:
 9. Focus on business impact: amounts, counts, status, trends
 
 10.Round money amounts sensibly (nearest thousand / lakh when appropriate)
-11. Use ₹ symbol for Indian Rupees
+
+11.Use ₹ symbol for Indian Rupees
+
+12.Client names are important — always include them when available.
+    - use the value from spms_po_master.spm_client_name column where spms_po_milestones.spm_cost_code =  spms_po_master.spm_cost_code
+
 Keep answers professional, calm and to-the-point.
+
 """
 
 prompt = ChatPromptTemplate.from_messages([
@@ -164,6 +177,8 @@ tool_node = ToolNode(tools)
 # ─── 9. Router ────────────────────────────────────────────────────────────────
 def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
     last_message = state["messages"][-1]
+
+
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return "tools"
     return "__end__"
@@ -208,25 +223,25 @@ def is_afda_related_question(question: str) -> bool:
 async def query_agent(request: QueryRequest):
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
-
-    config = {"configurable": {"thread_id": request.thread_id}}
+# set recursion limit higher for complex graphs
+    config = {"configurable": {"thread_id": request.thread_id ,},"recursion_limit": 50,}
 
     try:
         # Special fast-path for AFDA related questions
-        if is_afda_related_question(request.question):
-            today = datetime.now().strftime("%Y-%m-%d")
-            hint = (
-                f"Current date is {today}. "
-                "Use spms_po_milestones table. "
-                "Consider invoice doubtful only if: "
-                "spm_invoice_status indicates issued invoice AND "
-                "CURRENT_DATE - spm_invoice_date >= 365 days. "
-                "Focus on outstanding amount (invoice_value - collected_value)."
-            )
-            user_question = f"{request.question}\n\n{hint}"
-        else:
-            user_question = request.question
-
+        # if is_afda_related_question(request.question):
+        #     today = datetime.now().strftime("%Y-%m-%d")
+        #     hint = (
+        #         f"Current date is {today}. "
+        #         "Use spms_po_milestones table. "
+        #         "Consider invoice doubtful only if: "
+        #         "spm_invoice_status indicates issued invoice AND "
+        #         "CURRENT_DATE - spm_invoice_date >= 365 days. "
+        #         "Focus on outstanding amount (invoice_value - collected_value)."
+        #     )
+        #     user_question = f"{request.question}\n\n{hint}"
+        # else:
+        #     user_question = request.question
+        user_question = request.question
         final_answer = None
 
         for event in graph.stream(
@@ -238,6 +253,9 @@ async def query_agent(request: QueryRequest):
                 continue
 
             last_msg = event["messages"][-1]
+
+            if isinstance(last_msg, ToolMessage):
+                print(f"Last message is a ToolMessage with tool calls. {last_msg.pretty_print()}")
 
             if isinstance(last_msg, AIMessage) and not last_msg.tool_calls:
                 # ── Modern langchain-google-genai behavior (2025+) ──
@@ -256,7 +274,7 @@ async def query_agent(request: QueryRequest):
                     final_answer = str(last_msg.content).strip()
 
                 if final_answer:
-                    print("Final answer extracted:", final_answer[:180], "...")
+                    print("Final answer extracted:", final_answer[:], "...")
                     break
 
         if final_answer is None:
